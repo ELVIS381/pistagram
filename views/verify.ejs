@@ -36,10 +36,10 @@
             const username = document.getElementById('username').value
             const msg = document.getElementById('msg')
             const submitBtn = document.getElementById('submitBtn')
-            fetch(`/auth/checkuser?user=${username}`, {method: 'GET'})
+            fetch(`/auth/checkUser?user=${username}`, {method: 'GET'})
             .then(async resp => {
                 resp = await resp.json()
-                console.log(resp)
+                console.log(resp.data)
                 if(resp.data == true){
                     msg.innerHTML = ''
                     msg.innerHTML = 'Not Available'
