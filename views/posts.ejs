@@ -44,80 +44,87 @@
     </nav>
 
     <div class="posts">
-        <% for( let i = posts.length -1; i > -1; i-- ) { %>
-            <div class="card"> 
-                <div class="upper">
-                    <div class="info">
-                        <div class="pfp" style="background-image: url('<%=posts[i].userpfp%>');">
-    
+        <% if (docs.length > 0) { %>
+            <% for(let i = docs.length-1; i > -1; i--) {%>
+                <div class="card">
+                    <div class="upper">
+                        <div class="info">
+                            <div class="pfp" style="background-image: url('<%=docs[i].userpfp%>');"></div>
+                            <div class="username">@<%=docs[i].username%></div>
                         </div>
-                        <div class="username">
-                            @<%=posts[i].username%>
-                        </div>
+                            <% if (user.likedPosts.includes(docs[i]._id)) { %>
+                                <a aria-disabled="true">
+                                    <span>
+                                        <%=docs[i].likes%>
+                                    </span> 
+                                    <i class="fa-solid fa-heart" style="color: red;"></i>
+                                </a>
+                            <% }else{ %>
+                                <a class="like" data-id = <%=docs[i]._id%> data-sender = <%=user.username%> data-senderpfp = <%=user.pfp%> data-receiver = <%=docs[i].username%>>
+                                    <span>
+                                        <%=docs[i].likes%>
+                                    </span> 
+                                    <i class="fa-regular fa-heart" id="like-btn"></i>
+                                </a>
+                            <% } %>
                     </div>
-    
-                    <% if (loggedInUser.likedPosts.includes(posts[i]._id)) { %>
-                        <a aria-disabled="true">
-                            <span>
-                                <%=posts[i].likes%>
-                            </span> 
-                            <i class="fa-solid fa-heart" style="color: red;"></i>
-                        </a>
-                    <% }else{ %>
-                        <a class="like" data-id = <%=posts[i]._id%> data-sender = <%=loggedInUser.username%> data-senderpfp = <%=loggedInUser.pfp%> data-receiver = <%=posts[i].username%>>
-                            <span>
-                                <%=posts[i].likes%>
-                            </span> 
-                            <i class="fa-regular fa-heart" id="like-btn"></i>
-                        </a>
-                    <% } %>
+                    <hr style="height: 1px; width:100%; background-color: black; border:none; margin: 0; padding: 0;">
+                    <div class="lower" style="background-image: url('<%=docs[i].file%>');"></div>
+                    <hr style="height: 1px; width:100%; background-color: black; border:none; margin: 0; padding: 0;">
+                    <div class="caption">
+                        <%=docs[i].caption%>
+                    </div>
                 </div>
-                <hr style="height: 1px; width:100%; background-color: black; border:none; margin: 0; padding: 0;">
-                <div class="lower" style="background-image: url('<%=posts[i].file%>');"></div>
-                <hr style="height: 1px; width:100%; background-color: black; border:none; margin: 0; padding: 0;">
-                <div class="caption">
-                    <%=posts[i].caption%>
-                </div>
+            <% } %>
+        <% }else{ %>
+            <div class="no-posts">
+                <h1>No posts yet</h1>
             </div>
         <% } %>
+        
     </div>
     <script>
-        function likePost(post, id, sender, pfp, receiver){
-            fetch(`/posts/like?id=${id}&sender=${sender}&senderpfp=${pfp}&receiver=${receiver}`, {method : 'GET'})
-            .then(async resp=>{
-                resp = await resp.json()
-                if(resp.data == true){
-                    post.children[1].style.color = 'red';
-                    post.style.pointerEvents = 'none';
-                }else{
-                    post.children[1].classList.remove('fa-solid');
-                    post.children[1].classList.add('fa-regular');
-                    post.children[1].style.color = 'black';
-                    post.children[0].innerHTML = parseInt(post.children[0].innerHTML) - 1;
-                }
-            })
-            .catch(err => console.log(err))
-        }
+        function likePost(post,id,sender,pfp,receiver){
+                fetch(`/posts/like?id=${id}&sender=${sender}&senderpfp=${pfp}&receiver=${receiver}`, {
+                    method: 'GET'
+                }).then(async resp =>{
+                    resp = await resp.json()
+                    console.log(resp)
+                    if(resp.data){
+                        // keep it red
+                        post.children[1].style.color = 'red';
+                        post.style.pointerEvents = 'none';
+                    }else{
+                        // remove color and decrement
+                        post.children[1].classList.remove('fa-solid');
+                        post.children[1].classList.add('fa-regular');
+                        post.children[1].style.color = 'black';
+                        post.children[0].innerHTML = parseInt(post.children[0].innerHTML) - 1;
+                    }
+                })
+                .catch(err => console.log(err))
+            }
         function listen(){
-            const posts = document.querySelectorAll('.like');
-            posts.forEach(like => {
-                like.addEventListener('click', ()=>{
-                    const id = like.getAttribute('data-id')
-                    const sender = like.getAttribute('data-sender');
-                    const receiver = like.getAttribute('data-receiver');
-                    const senderpfp = like.getAttribute('data-senderpfp');
+            const likes = document.querySelectorAll('.like');
+            console.log(likes)
+            likes.forEach(post => {
+                post.addEventListener('click', () => {
+                    const id = post.getAttribute('data-id');
+                    const sender = post.getAttribute('data-sender');
+                    const receiver = post.getAttribute('data-receiver');
+                    const senderpfp = post.getAttribute('data-senderpfp');
                     // color change and increment
-                    like.children[1].classList.remove('fa-regular');
-                    like.children[1].classList.add('fa-solid');
-                    like.children[1].style.color = 'red';
-                    like.children[0].innerHTML = parseInt(like.children[0].innerHTML) + 1;
-                    likePost(like,id, sender, senderpfp, receiver)
+                    post.children[1].classList.remove('fa-regular');
+                    post.children[1].classList.add('fa-solid');
+                    post.children[1].style.color = 'red';
+                    post.children[0].innerHTML = parseInt(post.children[0].innerHTML) + 1;
+                    
+                    likePost(post, id,  sender, senderpfp, receiver);
                 })
             })
         }
-        window.onload = () => {
-            listen()
+        
+        window.onload = ()=>{
+            listen();
         }
     </script>
-</body>
-</html>
