@@ -137,7 +137,7 @@ router.post('/verifyuser', (req,res)=>{
 
 router.get('/logout', (req,res)=>{
     req.session.destroy()
-    res.redirect('/')
+    res.send("User Logged Out")
 })
 
 module.exports = router
