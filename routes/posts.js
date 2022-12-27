@@ -20,10 +20,10 @@ router.post('/newpost', isAuthorized, isVerified, (req,res) => {
     const caption = req.body.caption
 
     newPost = new Posts({
-        'file': file,
-        'caption': caption,
-        'userpfp': req.session.user.pfp,
-        'username': req.session.user.username,
+         file: file,
+         caption: caption,
+         userpfp: req.session.user.pfp,
+         username: req.session.user.username,
     })
 
     newPost.save()
