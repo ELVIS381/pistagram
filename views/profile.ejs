@@ -50,27 +50,30 @@
             Profile
         </h1>
     </div>
+
     <div class="profile">
         <div class="info-box">
             <div class="left">
-                <div class="pfp" style="background-image: url('<%=pfp%>');"></div>
+                <div class="pfp" style="background-image: url(<%=user.pfp%>);"></div>
                 <div class="username">
-                    <strong><%=username%></strong> 
+                    <strong>
+                        <%=user.username%>
+                    </strong>
                 </div>
             </div>
-            <hr style="transform: rotate(90); margin: 0; padding: 0; color: black; background-color: black; width: 0.2vw; opacity: 1;">
+            <hr style="transform: rotate(90); margin: 0; padding: 0; color: black; background-color: black; width: 0.2w; opacity: 1; height: 100%;">
             <div class="right">
                 <span>
-                    <strong>Name: </strong><br><%= fullname %>
+                    <strong>Name: </strong><br><%= user.name %>
                 </span>
                 <span>
-                    <strong>Email: </strong><br><%= email %>
+                    <strong>Email: </strong><br><%= user.email %>
                 </span>
                 <span>
-                    <strong>Posts: </strong><br><%= posts.length %>
+                    <strong>Posts: </strong><br><%= user.posts.length %>
                 </span>
                 <span>
-                    <strong>Liked Posts: </strong><br><%= likedPosts.length %>
+                    <strong>Liked Posts: </strong><br><%= user.likedPosts.length %>
                 </span>
             </div>
         </div>
@@ -110,32 +113,31 @@
               </div>
             </div>
           </div>
+    </div>
 
-        <div class="profile-posts">
-            <div class="head">
-                <h1>
-                    Your Posts
-                </h1>
-            </div>
-            <div class="main-posts">
-                <% for(let i=posts.length - 1; i > -1; i--){ %>
-                    <div class="profile-post" style="background-image: url('<%=posts[i]%>');"></div>
-                <% } %> 
-            </div>
+    <div class="profile-posts">
+        <div class="head">
+            <h1>
+                Your Posts
+            </h1>
+        </div>
+        <div class="main-posts">
+            <%for(let i = user.posts.length-1; i > -1; i-- ){ %> 
+                <div class="profile-post" style="background-image: url('<%=user.posts[i]%>');"></div> 
+            <% } %>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous">
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous">    
-    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js" integrity="sha384-DfXdz2htPH0lsSSs5nCTpuj/zy4C+OGpamoFVy38MVBnE+IbbVYUew+OrCXaRkfj" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-fQybjgWLrvvRgtW6bFlB7jaZrFsaBXjsOMm/tB9LTS58ONXgqbR9W8oWht/amnpF" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/bs-custom-file-input/dist/bs-custom-file-input.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.3.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.3.0/firebase-storage.js"></script>
+     <!-- The core Firebase JS SDK is always required and must be listed first -->
+     <script src="https://www.gstatic.com/firebasejs/8.3.0/firebase-app.js"></script>
+     <script src="https://www.gstatic.com/firebasejs/8.3.0/firebase-storage.js"></script>
     <script>
         window.onload = () => {
             bsCustomFileInput.init()
         }
-
         const uBtn = document.getElementById('uploadBtn');
         const pBtn = document.getElementById('postBtn');
         const fileInput = document.getElementById('fileUrl')
@@ -150,28 +152,27 @@
             appId: "1:682318549315:web:f0833071a884722bce1ff6",
           };
 
-          firebase.initializeApp(firebaseConfig);
-
-          function uploadFile(){
-            loading.style.display = 'block';
-            loading.style.marginBottom = '1vw';
+          // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        function uploadFile(){
+            loading.style.display = 'block'
             const ref = firebase.storage().ref();
-            const file = document.querySelector('#file').files[0]
-            const name = new Date() + '-' + file.name
+            const file = document.getElementById('file').files[0];
+            const name = `${new Date}-${file.name}`
             const metadata = {
-                contentType: file.type
+                contentType : file.type
             }
-            const task = ref.child(name).put(file,metadata)
+            const task = ref.child(name).put(file, metadata)
             task
             .then(snapshot => snapshot.ref.getDownloadURL())
             .then(url => {
                 fileInput.value = url
                 if(fileInput.value != ''){
-                        pBtn.disabled = false;
-                    }else{
-                        pBtn.disabled = true;
+                    pBtn.disabled = false
+                }else{
+                    pBtn.disabled = true
                 }
-                loading.style.display = 'none';
+                loading.style.display = 'none'
             })
             .catch(err => console.log(err))
         }
