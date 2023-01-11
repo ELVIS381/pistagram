@@ -1,27 +1,25 @@
-const router = require('express').Router()
-const axios = require('axios')
+const router = require('express').Router();
+const axios = require('axios');
 const urlParse = require('url-parse');
-const qs = require('query-string')
-const Users = require('../models/Users')
+const qs = require('query-string');
+const Users = require('../models/Users');
+const {isAuthorized} = require('../config/authCheck');
 require('dotenv').config()
 
-redirectUri = process.env.REDIRECT_URI
+const redirectUri = process.env.REDIRECT_URI
 
 function getGoogleAuthURL(){
     const rootUrl = 'https://accounts.google.com/o/oauth2/v2/auth'
     const options = {
-        redirect_uri: redirectUri,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        access_type: 'offline',
-        response_type: 'code',
-        prompt: 'consent',
-        scope: [
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email'
-        ].join(" "),
+        redirect_uri : redirectUri,
+        client_id : process.env.GOOGLE_CLIENT_ID,
+        access_type : 'offline',
+        response_type : 'code',
+        scope : 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
+        prompt : 'consent'
     }
-    
-    return `${rootUrl}?${qs.stringify(options)}`
+
+     return `${rootUrl}?${qs.stringify(options)}`
 }
 
 function getTokens({code, clientId, clientSecret, redirectUri}){
@@ -37,71 +35,72 @@ function getTokens({code, clientId, clientSecret, redirectUri}){
     return axios.post(url, qs.stringify(options), {
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded'
-        },
-    })
-    .then((res)=> res.data)
+        }
+    }).then((res) => res.data)
     .catch(err => console.log(err))
 }
 
-router.get('/login', (req, res) => {
+
+
+router.get('/login', (req,res)=>{
+    // creating consent screen url
     res.redirect(getGoogleAuthURL())
 })
 
-router.get('/callback',async (req, res) => {
+router.get('/callback', async (req, res)=>{
     const queryUrl = new urlParse(req.url)
     const code = qs.parse(queryUrl.query).code
 
+    // getting access tokens
     const {id_token, access_token} = await getTokens({
         code,
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        redirectUri: redirectUri, 
+        redirectUri: redirectUri
     })
 
-    const googleUser = await axios.get(
-        `https://www.googleapis.com/oauth2/v3/userinfo?alt=json&access_token=${access_token}`,
-        {
-            headers: {
-                Authorization: `Bearer ${id_token}`
-            },
+    // getting user data
+    const googleUser = await axios.get(`https://www.googleapis.com/oauth2/v3/userinfo?alt=json&access_token=${access_token}`,{
+        headers : {
+            Authorization: `Bearer ${id_token}`
         }
-    )
-    .then((res)=> res.data)
+    }).then(res => res.data)
     .catch(err => console.log(err))
-
-    const user = await Users.findOne({email: googleUser.email})
-    if(user){
-        req.session.user = user
-        if(user.isVerified){
+    
+    // CRUD CREATE READ UPDATE DELETE
+    Users.findOne({email: googleUser.email})
+    .then((doc)=>{
+        if(doc){
+            //login
+            req.session.user = doc
             res.redirect('/posts')
         }else{
-            res.redirect('/auth/verify')
-        }
-    }else{
-        const newUser = new Users({
-            name: googleUser.name,
-            email: googleUser.email,
-            pfp: googleUser.picture,
-        })
-    
-        newUser.save()
-        .then(
-            (resp)=>{  
+            //register
+
+            const newUser = new Users({
+                name: googleUser.name,
+                email: googleUser.email,
+                pfp: googleUser.picture,
+            })
+
+            newUser.save()
+            .then((resp)=>{
                 req.session.user = resp
-                res.redirect('/auth/verify')
-            }
-        )
-        .catch(err => console.log(err))   
-    }
+                res.redirect('/posts')
+            })
+            .catch(err => console.log(err))
+        }
+    })
+    .catch(err => console.log(err))
+
 })
 
-router.get('/verify', (req,res)=>{
-    let user = req.session.user
-    res.render('verify', {user})
+router.get('/verify', isAuthorized, (req,res) => {
+    res.render('verify.ejs')
 })
 
-router.get('/checkuser', (req,res)=>{
-    let user = req.query.user
+router.get('/checkUser', isAuthorized, (req,res) => {
+    const user = req.query.user
 
     Users.findOne({username: user})
     .then(doc => {
@@ -118,17 +117,17 @@ router.get('/checkuser', (req,res)=>{
     .catch(err => console.log(err))
 })
 
-router.post('/verifyuser', (req,res)=>{
+router.post('/verifyuser', isAuthorized, (req,res)=>{
     const username = req.body.username
 
-    Users.findById(req.session.user._id)
+    Users.findOne({email: req.session.user.email})
     .then(doc => {
-        doc.isVerified = true
         doc.username = username
+        doc.isVerified = true
         doc.save()
-        .then((user)=>{
-            req.session.user = user
-            res.redirect('/profile')
+        .then((resp)=>{
+            req.session.user = resp
+            res.redirect('/posts')
         })
         .catch(err => console.log(err))
     })
@@ -140,4 +139,4 @@ router.get('/logout', (req,res)=>{
     res.redirect('/')
 })
 
-module.exports = router
+module.exports = router;
